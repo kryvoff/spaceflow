@@ -4,7 +4,7 @@ A browser-based **turn-based multiplayer party game** — four mini-games, one s
 
 ## Play
 
-**[▶ Play now on GitHub Pages](https://cdeil.github.io/spaceflow/)**
+**[▶ Play now on GitHub Pages](https://kryvoff.github.io/spaceflow/)**
 
 Or run locally:
 
