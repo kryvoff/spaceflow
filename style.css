@@ -62,7 +62,7 @@ canvas {
 #playerInputArea input:focus {
   border-color: #00ddff;
 }
-#addPlayerBtn, #startGameBtn, #resetBtn, #resetPlayersBtn {
+#addPlayerBtn, #startGameBtn, #resetBtn, #resetPlayersBtn, #nextTurnBtn {
   background: #1a1a2e;
   border: 1px solid #555;
   color: #00ddff;
@@ -72,7 +72,7 @@ canvas {
   cursor: pointer;
   transition: background 0.2s;
 }
-#addPlayerBtn:hover, #startGameBtn:hover, #resetBtn:hover, #resetPlayersBtn:hover {
+#addPlayerBtn:hover, #startGameBtn:hover, #resetBtn:hover, #resetPlayersBtn:hover, #nextTurnBtn:hover {
   background: #2a2a4e;
 }
 #startGameBtn {
@@ -85,6 +85,11 @@ canvas {
   color: #555;
   border-color: #333;
   cursor: default;
+}
+#nextTurnBtn {
+  color: #ffaa00;
+  border-color: #ffaa00;
+  font-size: 10px;
 }
 #resetBtn {
   color: #ff6644;

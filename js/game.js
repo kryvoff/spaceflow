@@ -54,6 +54,8 @@ window.addEventListener('DOMContentLoaded', () => {
     width: W,
     height: H,
     backgroundColor: '#0a0a1a',
+    roundPixels: true,
+    scale: { resolution: window.devicePixelRatio || 1 },
     physics: {
       default: 'arcade',
       arcade: { gravity: { y: 0 }, debug: false },

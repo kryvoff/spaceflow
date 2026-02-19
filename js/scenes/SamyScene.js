@@ -19,7 +19,7 @@ class SamyScene extends Phaser.Scene {
   create() {
     GameState.roundScore = 0;
     this.isDead = false;
-    this.samySpeed = 4 + Math.min(GameState.globalRound, 12) * 0.35;
+    this.samySpeed = 3 + Math.min(GameState.globalRound, 12) * 0.27;
     this.spawnTimer = 60;
     this.enemySpawnTimer = 120;
     this.distance = 0;
@@ -32,7 +32,7 @@ class SamyScene extends Phaser.Scene {
     this.player = this.physics.add.image(100, SAMY_GROUND_Y - SAMY_PH / 2, 'pixel');
     this.player.setAlpha(0);                         // invisible – we draw manually
     this.player.body.setSize(SAMY_PW, SAMY_PH);          // full visual size — body bottom aligns with ground line
-    this.player.body.setGravityY(1000);
+    this.player.body.setGravityY(1400);
     // World bounds bottom = SAMY_GROUND_Y acts as the floor
     this.physics.world.setBounds(0, -2000, 600, 2000 + SAMY_GROUND_Y);
     this.player.setCollideWorldBounds(true);
@@ -126,7 +126,7 @@ class SamyScene extends Phaser.Scene {
 
     // Jump
     if (Phaser.Input.Keyboard.JustDown(this.spaceKey) && onFloor) {
-      this.player.setVelocityY(-660);
+      this.player.setVelocityY(-800);
       sfxJump();
     }
 
