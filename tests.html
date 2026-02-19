@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SpaceFlow — Tests</title>
+<style>
+  body { background:#0a0a1a; color:#ccc; font-family:'Courier New',monospace; padding:24px; }
+  h1   { color:#00ddff; margin-bottom:16px; }
+  h2   { color:#888; font-size:13px; margin:18px 0 6px; text-transform:uppercase; letter-spacing:2px; border-bottom:1px solid #333; padding-bottom:4px; }
+  .pass { color:#44ff44; }
+  .fail { color:#ff4444; }
+  #summary { margin-top:20px; font-size:16px; font-weight:bold; padding:10px; border:2px solid #333; }
+  #summary.all-pass { border-color:#44ff44; color:#44ff44; }
+  #summary.has-fail  { border-color:#ff4444; color:#ff4444; }
+  pre { background:#111; padding:6px 10px; font-size:11px; color:#f88; margin-top:2px; }
+</style>
+</head>
+<body>
+<h1>⚡ SpaceFlow — Test Suite</h1>
+<div id="output"></div>
+<div id="summary"></div>
+
+<!--
+  Load the game modules in the same order as index.html so all globals
+  are available when the tests run.  The game loop / DOM elements are
+  not initialised (no canvas rendering happens), which keeps tests fast.
+-->
+<canvas id="game" width="600" height="500" style="display:none"></canvas>
+<div id="wrapper" style="display:none">
+  <div id="sidebar">
+    <div id="setupArea">
+      <input id="nameInput"><button id="addPlayerBtn"></button>
+      <div id="playerList"></div>
+      <button id="startGameBtn" disabled></button>
+      <button id="resetPlayersBtn"></button>
+    </div>
+    <div id="gameArea" style="display:none">
+      <div id="turnName"></div><div id="turnMode"></div>
+      <div id="scoreboard"></div>
+      <button id="resetBtn"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Game source (same order as index.html, minus main.js boot) -->
+<script src="js/canvas.js"></script>
+<script src="js/input.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/stars.js"></script>
+<script src="js/state.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/modes/flo.js"></script>
+<script src="js/modes/samy.js"></script>
+<script src="js/modes/jan.js"></script>
+<script src="js/modes/felix.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/screens.js"></script>
+<script src="js/sidebar.js"></script>
+
+<script>
+// ─── Minimal test framework ───────────────────────────────────────────
+const results = [];
+let currentSection = '';
+
+function section(name) {
+  currentSection = name;
+}
+
+function test(name, fn) {
+  try {
+    fn();
+    results.push({ ok: true, section: currentSection, name });
+  } catch (e) {
+    results.push({ ok: false, section: currentSection, name, error: e.message });
+  }
+}
+
+function assert(condition, msg) {
+  if (!condition) throw new Error(msg || 'Assertion failed');
+}
+
+function assertEqual(a, b, msg) {
+  if (a !== b) throw new Error(msg || `Expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
+}
+
+function assertApprox(a, b, tol, msg) {
+  tol = tol ?? 0.0001;
+  if (Math.abs(a - b) > tol) throw new Error(msg || `Expected ~${b}, got ${a}`);
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────
+function resetGameState() {
+  players          = [];
+  currentPlayerIdx = 0;
+  globalRound      = 1;
+  mode             = 'samy';
+  state            = 'menu';
+  roundScore       = 0;
+  lives            = 3;
+  particles        = [];
+}
+
+function addPlayer(name, totalScore = 0, highScore = 0) {
+  players.push({ name, totalScore, highScore });
+}
+
+
+// ═════════════════════════════════════════════════════════════════════
+// TESTS
+// ═════════════════════════════════════════════════════════════════════
+
+// ─── Canvas / utilities ───────────────────────────────────────────────
+section('canvas.js — rectsOverlap');
+
+test('overlapping rects return true', () => {
+  assert(rectsOverlap(0, 0, 10, 10, 5, 5, 10, 10));
+});
+test('touching edges (not overlapping) return false', () => {
+  assert(!rectsOverlap(0, 0, 10, 10, 10, 0, 10, 10));
+});
+test('separated rects return false', () => {
+  assert(!rectsOverlap(0, 0, 5, 5, 20, 20, 5, 5));
+});
+test('one rect fully inside another', () => {
+  assert(rectsOverlap(0, 0, 100, 100, 10, 10, 20, 20));
+});
+test('W and H constants defined', () => {
+  assertEqual(W, 600); assertEqual(H, 500);
+});
+
+
+// ─── Particles ────────────────────────────────────────────────────────
+section('particles.js');
+
+test('spawnExplosion adds correct count', () => {
+  particles = [];
+  spawnExplosion(100, 100, '#ff0000', 10);
+  assertEqual(particles.length, 10);
+});
+test('particles have required fields', () => {
+  const p = particles[0];
+  assert('x' in p && 'y' in p && 'life' in p && 'color' in p);
+});
+test('updateParticles removes dead particles', () => {
+  particles = [{ x:0, y:0, vx:0, vy:0, life:1, maxLife:10, color:'#f00', size:2 }];
+  updateParticles();
+  assertEqual(particles.length, 0);
+});
+test('spawnExplosion color is preserved', () => {
+  particles = [];
+  spawnExplosion(0, 0, '#aabbcc', 1);
+  assertEqual(particles[0].color, '#aabbcc');
+});
+
+
+// ─── Audio ────────────────────────────────────────────────────────────
+section('audio.js');
+
+test('melody arrays have 16 entries each', () => {
+  assertEqual(floMelody.length,   16);
+  assertEqual(samyMelody.length,  16);
+  assertEqual(janMelody.length,   16);
+  assertEqual(felixMelody.length, 16);
+});
+test('baseLine has 8 entries', () => {
+  assertEqual(baseLine.length, 8);
+});
+test('stopMusic is safe to call before initAudio', () => {
+  stopMusic(); // should not throw
+  assert(true);
+});
+test('startMusic is safe to call before initAudio', () => {
+  startMusic('samy'); // should not throw (no audioCtx yet)
+  assert(true);
+});
+
+
+// ─── State / turn management ──────────────────────────────────────────
+section('state.js — endCurrentTurn / mode rotation');
+
+test('mode rotates samy → flo', () => {
+  resetGameState();
+  addPlayer('Alice');
+  mode = 'samy';
+  endCurrentTurn();
+  assertEqual(mode, 'flo');
+});
+test('mode rotates flo → jan', () => {
+  resetGameState();
+  addPlayer('Alice');
+  mode = 'flo';
+  endCurrentTurn();
+  assertEqual(mode, 'jan');
+});
+test('mode rotates jan → felix', () => {
+  resetGameState();
+  addPlayer('Alice');
+  mode = 'jan';
+  endCurrentTurn();
+  assertEqual(mode, 'felix');
+});
+test('mode rotates felix → samy', () => {
+  resetGameState();
+  addPlayer('Alice');
+  mode = 'felix';
+  endCurrentTurn();
+  assertEqual(mode, 'samy');
+});
+test('score is added to player totalScore', () => {
+  resetGameState();
+  addPlayer('Alice');
+  roundScore = 42;
+  endCurrentTurn();
+  assertEqual(players[0].totalScore, 42);
+});
+test('negative roundScore clamps to 0', () => {
+  resetGameState();
+  addPlayer('Alice');
+  roundScore = -100;
+  endCurrentTurn();
+  assertEqual(players[0].totalScore, 0);
+});
+test('highScore is updated when totalScore exceeds it', () => {
+  resetGameState();
+  addPlayer('Alice', 0, 10);
+  roundScore = 50;
+  endCurrentTurn();
+  assertEqual(players[0].highScore, 50);
+});
+test('highScore is NOT updated when totalScore is lower', () => {
+  resetGameState();
+  addPlayer('Alice', 0, 100);
+  roundScore = 5;
+  endCurrentTurn();
+  assertEqual(players[0].highScore, 100);
+});
+test('currentPlayerIdx advances after turn', () => {
+  resetGameState();
+  addPlayer('Alice'); addPlayer('Bob');
+  endCurrentTurn();
+  assertEqual(currentPlayerIdx, 1);
+});
+test('currentPlayerIdx wraps back to 0 after all players', () => {
+  resetGameState();
+  addPlayer('Alice'); addPlayer('Bob');
+  endCurrentTurn(); // → Bob (idx 1)
+  endCurrentTurn(); // → Alice (idx 0)
+  assertEqual(currentPlayerIdx, 0);
+});
+test('globalRound increments after full rotation of players', () => {
+  resetGameState();
+  addPlayer('Alice'); addPlayer('Bob');
+  assertEqual(globalRound, 1);
+  endCurrentTurn(); endCurrentTurn();
+  assertEqual(globalRound, 2);
+});
+test('state is set to turnAnnounce after endCurrentTurn', () => {
+  resetGameState();
+  addPlayer('Alice');
+  endCurrentTurn();
+  assertEqual(state, 'turnAnnounce');
+});
+
+
+// ─── Storage / localStorage ───────────────────────────────────────────
+section('storage.js — savePlayers / loadPlayers');
+
+test('savePlayers writes to localStorage', () => {
+  resetGameState();
+  addPlayer('Alice', 10, 20);
+  savePlayers();
+  const raw = localStorage.getItem('spaceflow_players');
+  assert(raw !== null);
+  const data = JSON.parse(raw);
+  assertEqual(data[0].name, 'Alice');
+  assertEqual(data[0].highScore, 20);
+});
+test('loadPlayers restores names and highScores', () => {
+  localStorage.setItem('spaceflow_players', JSON.stringify([
+    { name: 'TestUser', highScore: 99 }
+  ]));
+  players = [];
+  loadPlayers();
+  assertEqual(players.length, 1);
+  assertEqual(players[0].name, 'TestUser');
+  assertEqual(players[0].highScore, 99);
+  assertEqual(players[0].totalScore, 0); // session score starts fresh
+});
+test('loadPlayers ignores entries with empty name', () => {
+  localStorage.setItem('spaceflow_players', JSON.stringify([
+    { name: '', highScore: 5 },
+    { name: 'Valid', highScore: 1 }
+  ]));
+  players = [];
+  loadPlayers();
+  assertEqual(players.length, 1);
+});
+test('loadPlayers caps at 8 players', () => {
+  const data = Array.from({length:12}, (_,i) => ({ name:`P${i}`, highScore:0 }));
+  localStorage.setItem('spaceflow_players', JSON.stringify(data));
+  players = [];
+  loadPlayers();
+  assert(players.length <= 8, `Got ${players.length} players, expected ≤ 8`);
+});
+test('loadPlayers handles missing/null gracefully', () => {
+  localStorage.removeItem('spaceflow_players');
+  players = []; // should remain empty
+  loadPlayers();
+  assert(true);
+});
+test('loadPlayers handles malformed JSON gracefully', () => {
+  localStorage.setItem('spaceflow_players', '{{{broken');
+  players = [];
+  loadPlayers(); // should not throw
+  assert(true);
+});
+
+
+// ─── Flo mode ─────────────────────────────────────────────────────────
+section('modes/flo.js');
+
+test('initFlo sets correct initial lives', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1;
+  initFlo();
+  assertEqual(lives, 3);
+});
+test('initFlo creates bunnies', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1;
+  initFlo();
+  assert(bunnies.length >= 14, `Expected ≥14 bunnies, got ${bunnies.length}`);
+});
+test('initFlo resets roundScore to 0', () => {
+  resetGameState(); addPlayer('Alice');
+  roundScore = 999;
+  initFlo();
+  assertEqual(roundScore, 0);
+});
+test('more bunnies spawn in higher rounds', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initFlo(); const count1 = bunnies.length;
+  globalRound = 5; initFlo(); const count5 = bunnies.length;
+  assert(count5 >= count1, `Round 5 should have >= bunnies than round 1`);
+});
+test('all bunnies start alive', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initFlo();
+  assert(bunnies.every(b => b.alive));
+});
+test('rectsOverlap used correctly for bunny dimensions', () => {
+  const b1 = { x:100, y:100, w:14, h:12 };
+  const b2 = { x:200, y:200, w:14, h:12 };
+  assert(!rectsOverlap(b1.x-b1.w/2, b1.y-b1.h, b1.w, b1.h, b2.x-b2.w/2, b2.y-b2.h, b2.w, b2.h));
+});
+
+
+// ─── Samy mode ────────────────────────────────────────────────────────
+section('modes/samy.js');
+
+test('initSamy resets roundScore', () => {
+  resetGameState(); addPlayer('Alice');
+  roundScore = 500; initSamy();
+  assertEqual(roundScore, 0);
+});
+test('initSamy speed scales with globalRound', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initSamy(); const s1 = samySpeed;
+  globalRound = 5; initSamy(); const s5 = samySpeed;
+  assert(s5 > s1, `Speed should be higher in round 5 (${s5}) vs round 1 (${s1})`);
+});
+test('initSamy starts on ground', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initSamy();
+  assert(samyPlayer.onGround);
+});
+test('initSamy clears obstacles and enemies', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initSamy();
+  assertEqual(samyObstacles.length, 0);
+  assertEqual(samyEnemies.length, 0);
+});
+test('SAMY_GRAVITY and SAMY_JUMP_FORCE have expected signs', () => {
+  assert(SAMY_GRAVITY > 0, 'gravity should be positive (pulls down)');
+  assert(SAMY_JUMP_FORCE < 0, 'jump force should be negative (moves up)');
+});
+
+
+// ─── Jan mode ─────────────────────────────────────────────────────────
+section('modes/jan.js');
+
+test('initJan clears balls', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initJan();
+  assertEqual(janBalls.length, 0);
+});
+test('initJan resets goals conceded', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initJan();
+  assertEqual(janGoalsConceded, 0);
+});
+test('initJan resets saves', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initJan();
+  assertEqual(janSaves, 0);
+});
+test('janMaxShots scales with globalRound', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initJan(); const s1 = janMaxShots;
+  globalRound = 3; initJan(); const s3 = janMaxShots;
+  assert(s3 > s1, `More shots expected in round 3 (${s3}) vs round 1 (${s1})`);
+});
+test('initJan resets roundScore', () => {
+  resetGameState(); addPlayer('Alice');
+  roundScore = 999; initJan();
+  assertEqual(roundScore, 0);
+});
+test('janKeeper starts at screen center vertically', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initJan();
+  assertEqual(janKeeper.y, H/2);
+});
+
+
+// ─── Felix mode ───────────────────────────────────────────────────────
+section('modes/felix.js');
+
+test('initFelix clears runners', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initFelix();
+  assertEqual(felixRunners.length, 0);
+});
+test('initFelix resets tackles and missed', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initFelix();
+  assertEqual(felixTackles, 0);
+  assertEqual(felixMissed, 0);
+});
+test('felixMaxMissed scales with globalRound', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initFelix(); const m1 = felixMaxMissed;
+  globalRound = 4; initFelix(); const m4 = felixMaxMissed;
+  assert(m4 >= m1, `felixMaxMissed should be >= in later rounds`);
+});
+test('felixMaxMissed caps at round 5+', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 10; initFelix(); const m10 = felixMaxMissed;
+  globalRound = 20; initFelix(); const m20 = felixMaxMissed;
+  assertEqual(m10, m20, 'felixMaxMissed should be capped');
+});
+test('initFelix resets roundScore', () => {
+  resetGameState(); addPlayer('Alice');
+  roundScore = 999; initFelix();
+  assertEqual(roundScore, 0);
+});
+test('player starts not ducking and not tackling', () => {
+  resetGameState(); addPlayer('Alice');
+  globalRound = 1; initFelix();
+  assertEqual(felixPlayer.ducking,  false);
+  assertEqual(felixPlayer.tackling, false);
+});
+
+
+// ─── Sidebar / sanitize ───────────────────────────────────────────────
+section('sidebar.js — sanitize');
+
+test('sanitize escapes HTML tags', () => {
+  const out = sanitize('<img onerror="alert(1)">');
+  assert(!out.includes('<img'), `Got: ${out}`);
+});
+test('sanitize escapes ampersand', () => {
+  const out = sanitize('Tom & Jerry');
+  assert(out.includes('&amp;'), `Expected &amp;, got: ${out}`);
+});
+test('sanitize returns plain text unchanged', () => {
+  assertEqual(sanitize('Alice'), 'Alice');
+});
+test('sanitize handles empty string', () => {
+  assertEqual(sanitize(''), '');
+});
+
+
+// ═════════════════════════════════════════════════════════════════════
+// Render results
+// ═════════════════════════════════════════════════════════════════════
+const out = document.getElementById('output');
+let currentSec = '', passed = 0, failed = 0;
+
+for (const r of results) {
+  if (r.section !== currentSec) {
+    currentSec = r.section;
+    const h = document.createElement('h2');
+    h.textContent = currentSec;
+    out.appendChild(h);
+  }
+  const div = document.createElement('div');
+  div.className = r.ok ? 'pass' : 'fail';
+  div.textContent = (r.ok ? '✓ ' : '✗ ') + r.name;
+  if (!r.ok && r.error) {
+    const pre = document.createElement('pre');
+    pre.textContent = r.error;
+    div.appendChild(pre);
+  }
+  out.appendChild(div);
+  r.ok ? passed++ : failed++;
+}
+
+const summary = document.getElementById('summary');
+summary.textContent = `${passed + failed} tests — ${passed} passed, ${failed} failed`;
+summary.className   = failed === 0 ? 'all-pass' : 'has-fail';
+</script>
+</body>
+</html>

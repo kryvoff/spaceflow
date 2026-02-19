@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpaceFlow</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="wrapper">
+  <div id="sidebar">
+    <h2>⚡ SPACEFLOW ⚡</h2>
+
+    <div id="setupArea">
+      <div class="section-label">Add Players</div>
+      <div id="playerInputArea">
+        <input type="text" id="nameInput" placeholder="Enter name..." maxlength="12" autocomplete="off">
+        <button id="addPlayerBtn">+ Add Player</button>
+      </div>
+      <div class="section-label" style="margin-top:6px;">Players</div>
+      <div id="playerList"></div>
+      <button id="startGameBtn" disabled>▶ START GAME</button>
+      <button id="resetPlayersBtn" style="margin-top:4px;">✕ Reset All Players & Scores</button>
+    </div>
+
+    <div id="gameArea" style="display:none;">
+      <div class="section-label">Now Playing</div>
+      <div id="currentTurnInfo">
+        <div class="turn-name" id="turnName">-</div>
+        <div class="turn-mode" id="turnMode">-</div>
+      </div>
+      <div class="section-label" style="margin-top:6px;">Scoreboard</div>
+      <div id="scoreboard"></div>
+      <button id="resetBtn" style="margin-top:8px;">↺ New Game</button>
+    </div>
+  </div>
+  <canvas id="game"></canvas>
+</div>
+
+<!-- Core -->
+<script src="js/canvas.js"></script>
+<script src="js/input.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/stars.js"></script>
+<!-- State & persistence -->
+<script src="js/state.js"></script>
+<script src="js/storage.js"></script>
+<!-- Game modes -->
+<script src="js/modes/flo.js"></script>
+<script src="js/modes/samy.js"></script>
+<script src="js/modes/jan.js"></script>
+<script src="js/modes/felix.js"></script>
+<!-- UI -->
+<script src="js/hud.js"></script>
+<script src="js/screens.js"></script>
+<script src="js/sidebar.js"></script>
+<!-- Entry point -->
+<script src="js/main.js"></script>
+</body>
+</html>
