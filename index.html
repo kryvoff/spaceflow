@@ -31,31 +31,31 @@
       </div>
       <div class="section-label" style="margin-top:6px;">Scoreboard</div>
       <div id="scoreboard"></div>
-      <button id="resetBtn" style="margin-top:8px;">↺ New Game</button>
+      <button id="nextTurnBtn" style="margin-top:8px;">⏭ Skip Game</button>
+      <button id="resetBtn" style="margin-top:4px;">↺ New Game</button>
     </div>
   </div>
   <canvas id="game"></canvas>
 </div>
 
-<!-- Core -->
-<script src="js/canvas.js"></script>
-<script src="js/input.js"></script>
+<!-- Game engine (bundled) -->
+<script src="js/lib/phaser.min.js"></script>
+<!-- Shared helpers (must come before scenes and game.js) -->
+<script src="js/scenes/shared.js"></script>
+<!-- Audio & persistence (no Phaser dependency) -->
 <script src="js/audio.js"></script>
-<script src="js/particles.js"></script>
-<script src="js/stars.js"></script>
-<!-- State & persistence -->
-<script src="js/state.js"></script>
 <script src="js/storage.js"></script>
-<!-- Game modes -->
-<script src="js/modes/flo.js"></script>
-<script src="js/modes/samy.js"></script>
-<script src="js/modes/jan.js"></script>
-<script src="js/modes/felix.js"></script>
-<!-- UI -->
-<script src="js/hud.js"></script>
-<script src="js/screens.js"></script>
+<!-- Phaser scenes -->
+<script src="js/scenes/BootScene.js"></script>
+<script src="js/scenes/MenuScene.js"></script>
+<script src="js/scenes/TurnAnnounceScene.js"></script>
+<script src="js/scenes/SamyScene.js"></script>
+<script src="js/scenes/FloScene.js"></script>
+<script src="js/scenes/JanScene.js"></script>
+<script src="js/scenes/FelixScene.js"></script>
+<!-- Sidebar DOM (uses GameState + phaserGame defined in game.js) -->
 <script src="js/sidebar.js"></script>
-<!-- Entry point -->
-<script src="js/main.js"></script>
+<!-- Entry point: creates GameState, phaserGame, loadPlayers() -->
+<script src="js/game.js"></script>
 </body>
 </html>

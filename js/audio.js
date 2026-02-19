@@ -77,7 +77,7 @@ function startMusic(mt) {
   const bpm = mt==='flo' ? 180 : mt==='jan' ? 160 : mt==='felix' ? 150 : 220;
   const iv  = 60000 / bpm;
   musicInterval = setInterval(() => {
-    if (!audioCtx || state === 'turnAnnounce') return;
+    if (!audioCtx) return;
     playTone(mel[musicStep%mel.length],    iv/1000*0.8, 'square',   0.06, musicGain);
     playTone(baseLine[musicStep%baseLine.length], iv/1000*0.9, 'triangle', 0.08, musicGain);
     if (musicStep%2===0) playTone(80, 0.05, 'square', 0.1, musicGain);
