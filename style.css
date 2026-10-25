@@ -16,7 +16,7 @@ body {
 }
 canvas {
   border: 2px solid #333;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 /* ─── Sidebar ─── */

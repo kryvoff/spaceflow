@@ -46,12 +46,15 @@ function drawSpaceBg(gfx) {
 
 // ─── HUD helpers ──────────────────────────────────────────────────────
 function makeText(scene, x, y, str, extra) {
-  return scene.add.text(x, y, str, {
+  const resolution = Math.max(1, window.devicePixelRatio || 1);
+  const text = scene.add.text(Math.round(x), Math.round(y), str, {
     fontFamily: '"Courier New", monospace',
     fontSize: '14px',
     color: '#ffffff',
     ...extra,
   });
+  text.setResolution(resolution);
+  return text;
 }
 
 // Build a common top-bar HUD for all modes and return the text objects
